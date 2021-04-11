@@ -1,21 +1,50 @@
+# インストールした discord.py を読み込む
+import discord
 from discord.ext import commands
+import ffmpeg
 import os
-import traceback
+# 自分のBotのアクセストークンに置き換えてください
+TOKEN = 'みせられないよ'
+sound_path = "./sound"
+# 接続に必要なオブジェクトを生成
+client = commands.Bot(command_prefix='+')
+voice_client = None
 
-bot = commands.Bot(command_prefix='/')
-token = os.environ['DISCORD_BOT_TOKEN']
+# 起動時に動作する処理
+@client.event
+async def on_ready():
+    print('Logged in as')
+    print(client.user.name)
+    print(client.user.id)
+    print('------')
 
+@client.command()
+async def join(ctx):
+    print('#voicechannelを取得')
+    vc = ctx.author.voice.channel
+    print('#voicechannelに接続')
+    await vc.connect()
 
-@bot.event
-async def on_command_error(ctx, error):
-    orig_error = getattr(error, "original", error)
-    error_msg = ''.join(traceback.TracebackException.from_exception(orig_error).format())
-    await ctx.send(error_msg)
+@client.command()
+async def bye(ctx):
+    print('#切断')
+    await ctx.voice_client.disconnect()
 
+@client.event
+async def on_message(message):
+    if message.content.startswith('+'):
+        origin_name = message.content.lstrip('+')
+        print(message.content)
+        name = 'sound/' + origin_name + '.ogg'
+        if os.path.exists(name):
+            source = discord.FFmpegPCMAudio(name)
+            message.guild.voice_client.play(source)
+        else:
+            pass
 
-@bot.command()
-async def ping(ctx):
-    await ctx.send('pong')
+    else:
+        pass
+    await client.process_commands(message)
 
-
-bot.run(token)
+# Botの起動とDiscordサーバーへの接続
+client.run(TOKEN)
